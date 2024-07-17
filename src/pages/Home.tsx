@@ -1,6 +1,34 @@
-import { Box, Input } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Input,
+  InputGroup,
+  InputRightElement,
+} from "@chakra-ui/react";
 import gameFile from "../file/game.json";
 import TextDisplay from "../components/TextDisplay";
+import { useRef, useState } from "react";
+
+type SceneObject = {
+  idObject: number;
+  possibleToCarry: boolean;
+  objectName: string;
+  objectDescription: string;
+  positiveResult: string;
+  negativeResult?: string;
+  correctCommand?: string;
+  targetScene: number;
+  solved: boolean;
+  got: boolean;
+};
+
+type Scene = {
+  idScene: number;
+  title: string;
+  description: string;
+  objects?: SceneObject[];
+};
 
 const Header = () => (
   <Box
@@ -16,31 +44,199 @@ const Header = () => (
   </Box>
 );
 
-const UserInput = () => (
-  <Input
-    placeholder="Tap your command"
-    w="900px"
-    position="fixed"
-    variant="filled"
-    bottom={0}
-    margin={8}
-    height={20}
-    bg="#2d3238"
-    color={"#909497"}
-    _hover={{
-      background: "#0f171f ",
-    }}
-    focusBorderColor="teal.500"
-    _focus={{
-      bg: "#2d3238",
-    }}
-  />
+const UserInput = ({
+  value,
+  setValue,
+  onClick,
+}: {
+  value: string;
+  setValue: (value: string) => void;
+  onClick: () => void;
+}) => (
+  <InputGroup w="900px" position="fixed" margin={8} bottom={0}>
+    <Input
+      value={value}
+      onChange={(event) => setValue(event?.target?.value.toLowerCase())}
+      placeholder="Tap your command"
+      variant="filled"
+      height={20}
+      bg="#2d3238"
+      color={"#909497"}
+      _hover={{
+        background: "#0f171f ",
+      }}
+      focusBorderColor="teal.500"
+      _focus={{
+        bg: "#2d3238",
+      }}
+    />
+    <InputRightElement height={20} mr={8}>
+      <Button size="sm" px={8} onClick={onClick} type="submit">
+        Send
+      </Button>
+    </InputRightElement>
+  </InputGroup>
 );
 
 const Home = () => {
+  const [userCommand, setUserCommand] = useState("");
+  const [inventory, setInventory] = useState<SceneObject[]>([]);
+  const [currentScene, setCurrentScene] = useState<Scene>(
+    gameFile?.scenes[0] as unknown as Scene
+  );
+  const [descriptionToRender, setDescriptionToRender] = useState<string[]>([
+    gameFile?.scenes[0].description,
+  ]);
+  const scrollRef = useRef<null | HTMLDivElement>(null);
+
+  const print = (text: string) => {
+    setDescriptionToRender((currentDescription) =>
+      currentDescription.concat(text)
+    );
+  };
+
+  const getSceneObjectByName = (searchObjectName: string) => {
+    return currentScene?.objects?.find(
+      (obj) => obj.objectName === searchObjectName
+    );
+  };
+  const getInventoryObjectByName = (searchObjectName: string) => {
+    return inventory?.find((obj) => obj.objectName === searchObjectName);
+  };
+
+  const handleObjDescriptionCommand = () => {
+    const objName = userCommand.trim().split(" ")[1];
+    const object = getSceneObjectByName(objName);
+    if (object) {
+      setDescriptionToRender((currentDescription) =>
+        currentDescription.concat(object.objectDescription)
+      );
+    } else {
+      setDescriptionToRender((currentDescription) =>
+        currentDescription.concat("OBJECT NOT FOUND")
+      );
+    }
+  };
+
+  const handleGetObjectCommand = () => {
+    const objName = userCommand.trim().split(" ")[1];
+
+    const object = getSceneObjectByName(objName);
+    if (object) {
+      const isObjectAlreadyOnInventory = inventory.find(
+        (item) => item.objectName === object.objectName
+      );
+
+      if (!object.possibleToCarry)
+        return print(object?.negativeResult || "UNABLE TO GET THIS ITEM");
+
+      if (isObjectAlreadyOnInventory) return print("ITEM ALREADY ON INVENTORY");
+
+      setInventory([object, ...inventory]);
+      print(`${object.objectName.toUpperCase()} ADDED TO THE INVENTORY`);
+    } else {
+      print("OBJECT NOT FOUND");
+    }
+  };
+
+  const handleShowInventoryCommand = () => {
+    const inventoryItemsNames = inventory
+      ?.map((item) => item.objectName)
+      .join(", ");
+    print(
+      inventoryItemsNames.length
+        ? `INVENTORY: ${inventoryItemsNames}`
+        : "EMPTY INVENTORY"
+    );
+  };
+
+  const handleSimpleUseCommand = (commandSplited: string[]) => {
+    const object = getSceneObjectByName(commandSplited[1]);
+    if (
+      object &&
+      !object.possibleToCarry &&
+      object.correctCommand === userCommand
+    ) {
+      print(object.positiveResult);
+      setCurrentScene(gameFile.scenes[object.targetScene] as unknown as Scene);
+      print(gameFile.scenes[object.targetScene].description);
+      return;
+    }
+    return print(object?.negativeResult || "OBJECT NOT FOUND");
+  };
+
+  const handleUseWithCommand = (commandSplited: string[]) => {
+    if (commandSplited[2] !== "with") return print("INVALID COMMAND");
+    const sceneObject = getSceneObjectByName(commandSplited[3]);
+    const inventoryObject = getInventoryObjectByName(commandSplited[1]);
+
+    console.log({ sceneObject, inventoryObject });
+    if (sceneObject && !sceneObject.possibleToCarry && inventoryObject) {
+      if (sceneObject.correctCommand === userCommand) {
+        print(sceneObject.positiveResult);
+        setCurrentScene(
+          gameFile.scenes[sceneObject.targetScene] as unknown as Scene
+        );
+        print(gameFile.scenes[sceneObject.targetScene].description);
+        return;
+      }
+      return print(sceneObject?.negativeResult || "OBJECT NOT FOUND");
+    }
+    return print(sceneObject?.negativeResult || "INVALID COMMAND");
+  };
+
+  const handleUseCommand = () => {
+    const commandSplited = userCommand.trim().split(" ");
+    if (commandSplited.length === 2) {
+      return handleSimpleUseCommand(commandSplited);
+    }
+    if (commandSplited.length === 4) {
+      return handleUseWithCommand(commandSplited);
+    }
+    print("INVALID COMMAND");
+    // const isCorrectCommand = currentScene.objects?.some(
+    //   (object) => object.correctCommand === userCommand
+    // );
+  };
+
+  const checkCommand = () => {
+    print(`$${userCommand}`);
+    const firstCommand = userCommand.split(" ")[0];
+    switch (firstCommand) {
+      case "use":
+        handleUseCommand();
+        break;
+      case "get":
+        handleGetObjectCommand();
+        break;
+      case "help":
+        // todo
+        break;
+      case "check":
+        handleObjDescriptionCommand();
+        break;
+      case "inventory":
+        handleShowInventoryCommand();
+        break;
+      case "save":
+        // todo
+        break;
+      case "load":
+        // todo
+        break;
+      default:
+        print("INVALID COMMAND");
+    }
+    scrollRef?.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+    setUserCommand("");
+  };
+
   return (
     <>
       <Box
+        pb={12}
         minH="100vh"
         maxH="100%"
         w="100%"
@@ -50,14 +246,19 @@ const Home = () => {
         alignItems="center"
       >
         <Header />
+        <Flex direction="column" gap={4} marginBottom={160}>
+          {descriptionToRender.map((desc, index) => (
+            <TextDisplay text={desc} key={index} />
+          ))}
+        </Flex>
 
-        <TextDisplay
-          text={
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent tristique faucibus cursus. Cras a turpis magna. Phasellus feugiat ligula sed placerat malesuada. Pellentesque finibus semper ultricies. Proin ac sem ullamcorper, fringilla sapien ut, congue nibh. Suspendisse potenti. In augue ex, aliquet ut nulla non, tincidunt dapibus ipsum. Proin quis pharetra massa. Nunc risus urna, fringilla quis imperdiet et, scelerisque at risus. Praesent risus lorem, placerat at maximus sed, elementum aliquam justo. Nunc eu molestie urna, at iaculis lacus. Cras pellentesque tellus urna, in feugiat lacus aliquam in. Ut congue efficitur ullamcorper. Aliquam non ex vestibulum, venenatis dui quis, viverra lorem. Nunc quis magna sit amet ligula faucibus bibendum.\n\nNunc diam erat, gravida ornare lectus sed, sagittis ultricies turpis. Donec lobortis sem id lorem tempor molestie. Cras tempus, nulla at accumsan porta, lorem lorem rutrum orci, vitae aliquet massa dui id lacus. Sed condimentum fringilla ipsum. Pellentesque lobortis enim nec fringilla tristique. Maecenas a diam nisl. Morbi maximus nisi non ipsum suscipit, sed ultricies ex pulvinar. Aliquam aliquam mattis porta. Suspendisse at feugiat tortor.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent tristique faucibus cursus. Cras a turpis magna. Phasellus feugiat ligula sed placerat malesuada. Pellentesque finibus semper ultricies. Proin ac sem ullamcorper, fringilla sapien ut, congue nibh. Suspendisse potenti. In augue ex, aliquet ut nulla non, tincidunt dapibus ipsum. Proin quis pharetra massa. Nunc risus urna, fringilla quis imperdiet et, scelerisque at risus. Praesent risus lorem, placerat at maximus sed, elementum aliquam justo. Nunc eu molestie urna, at iaculis lacus. Cras pellentesque tellus urna, in feugiat lacus aliquam in. Ut congue efficitur ullamcorper. Aliquam non ex vestibulum, venenatis dui quis, viverra lorem. Nunc quis magna sit amet ligula faucibus bibendum."
-          }
+        <UserInput
+          value={userCommand}
+          setValue={setUserCommand}
+          onClick={checkCommand}
         />
-        <UserInput />
       </Box>
+      <div ref={scrollRef} />
     </>
   );
 };

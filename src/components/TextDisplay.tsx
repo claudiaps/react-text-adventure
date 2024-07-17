@@ -34,7 +34,6 @@ const TextDisplay = ({ text }: { text: string }) => {
         maxWidth: "900px",
         wordBreak: "break-word",
         whiteSpace: "pre-line",
-        marginBottom: "140px",
         maxHeight: "90vh",
         fontSize: "18px",
       }}
