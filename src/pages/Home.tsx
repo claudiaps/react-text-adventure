@@ -5,6 +5,7 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  Kbd,
 } from "@chakra-ui/react";
 import gameFile from "../file/game.json";
 import TextDisplay from "../components/TextDisplay";
@@ -36,11 +37,11 @@ const Header = () => (
     top={0}
     h="150px"
     w="100%"
-    pt={10}
-    pl={10}
+    pt={6}
+    pl={6}
     bgGradient="linear(to-b, #0f171f 0%, rgba(0, 0, 0, 0) 100%)"
   >
-    <Box>Text Adventure</Box>
+    <Kbd bgColor="black">Text Adventure</Kbd>
   </Box>
 );
 
