@@ -170,7 +170,6 @@ const Home = () => {
     const sceneObject = getSceneObjectByName(commandSplited[3]);
     const inventoryObject = getInventoryObjectByName(commandSplited[1]);
 
-    console.log({ sceneObject, inventoryObject });
     if (sceneObject && !sceneObject.possibleToCarry && inventoryObject) {
       if (sceneObject.correctCommand === userCommand) {
         print(sceneObject.positiveResult);
@@ -199,6 +198,34 @@ const Home = () => {
     // );
   };
 
+  const handleSaveCommand = () => {
+    localStorage.setItem("currentScene", JSON.stringify(currentScene));
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+    print("SAVING...");
+  };
+
+  const handleLoadGameCommand = () => {
+    const scene = localStorage.getItem("currentScene");
+    const invent = localStorage.getItem("inventory");
+    if (!scene && invent) {
+      return print("SAVE NOT FOUND");
+    }
+    if (scene) {
+      setCurrentScene(JSON.parse(scene));
+      setDescriptionToRender(["SAVE LOADED"]);
+      print(JSON.parse(scene).description);
+    }
+    if (invent) {
+      setInventory(JSON.parse(invent));
+    }
+  };
+
+  const handleRestartCommand = () => {
+    setCurrentScene(gameFile.scenes[0] as unknown as Scene);
+    setInventory([]);
+    setDescriptionToRender([gameFile.scenes[0].description]);
+  };
+
   const checkCommand = () => {
     print(`$${userCommand}`);
     const firstCommand = userCommand.split(" ")[0];
@@ -219,10 +246,13 @@ const Home = () => {
         handleShowInventoryCommand();
         break;
       case "save":
-        // todo
+        handleSaveCommand();
         break;
       case "load":
-        // todo
+        handleLoadGameCommand();
+        break;
+      case "restart":
+        handleRestartCommand();
         break;
       default:
         print("INVALID COMMAND");
