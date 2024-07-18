@@ -24,6 +24,7 @@ const TextDisplay = ({ text }: { text: string }) => {
       }, interval);
     }
   };
+
   useEffect(() => {
     typingRender(text, setTypedText, 2);
   }, [text]);
