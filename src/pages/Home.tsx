@@ -237,7 +237,7 @@ const Home = () => {
         handleGetObjectCommand();
         break;
       case "help":
-        // todo
+        print(gameFile.help);
         break;
       case "check":
         handleObjDescriptionCommand();

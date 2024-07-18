@@ -1,4 +1,5 @@
 {
+    "help": "O objetivo do text adventure é o usuário interagir com os objetos descritos na cena (identificados pelos nomes em letra maiúsculas) para avançar no jogo. Os comandos possíveis são:\n\nHELP: exbibe o menu de ajuda do jogo\n\nUSE [ITEM]: interage com o item da cena\n\nCHECK [ITEM]: mostra a descrição do objeto na cena\n\nGET [ITEM]: Se possível, adiciona o item ao inventário\n\nINVENTORY: mostra os itens que estão no inventário\n\nUSE [INVENTORY_ITEM] WITH [SCENE_ITEM]: Realiza a ação utilizando um item do inventário com um item da cena\n\nSAVE: salva o jogo\n\nLOAD: carrega um jogo salvo\n\nRESTART: reinicia o jogo",
     "scenes": [
         {
             "idScene": 0,
